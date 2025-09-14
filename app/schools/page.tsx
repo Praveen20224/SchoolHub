@@ -10,6 +10,7 @@ import { SchoolGridSkeleton } from "@/components/loading-skeleton"
 import { MapPin, Phone, Mail, Search, Plus, Filter, School } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { OtpVerificationDialog } from "@/components/otp-verification-dialog"
 
 interface SchoolType {
   id: number
@@ -29,6 +30,9 @@ export default function SchoolsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCity, setSelectedCity] = useState("")
   const [selectedState, setSelectedState] = useState("")
+  const [showOtpDialog, setShowOtpDialog] = useState(false)
+  const [userEmail, setUserEmail] = useState("")
+  const [isVerifying, setIsVerifying] = useState(false)
   const { toast } = useToast()
 
   const supabase = createClient()
@@ -91,8 +95,74 @@ export default function SchoolsPage() {
     setFilteredSchools(filtered)
   }
 
+  const handleAddSchoolClick = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    try {
+      setIsVerifying(true)
+      // Get the current user's email from Supabase auth
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) {
+        // If user is not logged in, redirect to login page
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to add a new school.",
+          variant: "destructive",
+        })
+        // You might want to redirect to login page here
+        return
+      }
+      
+      if (!user.email) {
+        toast({
+          title: "Email Required",
+          description: "Your account doesn't have an email address.",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      setUserEmail(user.email)
+      
+      // Send OTP to user's email
+      await sendOtp(user.email)
+      
+      // Show OTP dialog
+      setShowOtpDialog(true)
+    } catch (error) {
+      console.error("Error initiating OTP flow:", error)
+      toast({
+        title: "Error",
+        description: "Failed to initiate verification. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  const handleOtpVerified = () => {
+    // Redirect to add school page after successful verification
+    window.location.href = "/add-school"
+  }
+
   const uniqueCities = [...new Set(schools.map((school) => school.city))].sort()
   const uniqueStates = [...new Set(schools.map((school) => school.state))].sort()
+
+  // Mock function - replace with actual implementation
+  const sendOtp = async (email: string): Promise<void> => {
+    // Implement your OTP sending logic here
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        toast({
+          title: "OTP Sent",
+          description: `A verification code has been sent to ${email}`,
+        })
+        resolve()
+      }, 1000)
+    })
+  }
 
   if (isLoading) {
     return (
@@ -146,6 +216,14 @@ export default function SchoolsPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* OTP Verification Dialog */}
+      <OtpVerificationDialog
+        open={showOtpDialog}
+        onOpenChange={setShowOtpDialog}
+        onVerified={handleOtpVerified}
+        email={userEmail}
+      />
+      
       {/* Header Section */}
       <div className="bg-card border-b border-border/50 animate-in fade-in-0 duration-500">
         <div className="container mx-auto px-4 py-8">
@@ -156,19 +234,28 @@ export default function SchoolsPage() {
             </div>
             <div className="animate-in slide-in-from-right-4 duration-700">
               <Button
-                asChild
+                onClick={handleAddSchoolClick}
+                disabled={isVerifying}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-105 transition-all duration-200"
               >
-                <Link href="/add-school">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New School
-                </Link>
+                {isVerifying ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-background border-t-transparent rounded-full" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add New School
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Rest of the component remains the same */}
       <div className="container mx-auto px-4 py-8">
         {/* Search and Filter Section */}
         <div className="mb-8 space-y-4 animate-in slide-in-from-top-4 duration-500 delay-200">
@@ -246,8 +333,12 @@ export default function SchoolsPage() {
             <p className="text-muted-foreground mb-4">
               {schools.length === 0 ? "No schools have been added yet." : "Try adjusting your search criteria."}
             </p>
-            <Button asChild className="hover:scale-105 transition-all duration-200">
-              <Link href="/add-school">Add First School</Link>
+            <Button 
+              onClick={handleAddSchoolClick}
+              disabled={isVerifying}
+              className="hover:scale-105 transition-all duration-200"
+            >
+              {isVerifying ? "Verifying..." : "Add First School"}
             </Button>
           </div>
         ) : (
@@ -273,71 +364,4 @@ export default function SchoolsPage() {
                       <School className="h-12 w-12 text-primary/60 group-hover:scale-110 transition-transform duration-300" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* School Name */}
-                    <div>
-                      <h3 className="text-xl font-semibold text-foreground mb-1 text-balance group-hover:text-primary transition-colors duration-300">
-                        {school.name}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="secondary"
-                          className="text-xs hover:scale-105 transition-transform duration-200"
-                        >
-                          {school.city}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs hover:scale-105 transition-transform duration-200">
-                          {school.state}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Address */}
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">
-                      <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:text-primary transition-colors duration-300" />
-                      <p className="text-pretty">{school.address}</p>
-                    </div>
-
-                    {/* Contact Info */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-200" />
-                        <a
-                          href={`tel:${school.contact}`}
-                          className="text-foreground hover:text-primary transition-colors duration-200 hover:underline"
-                        >
-                          {school.contact}
-                        </a>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-200" />
-                        <a
-                          href={`mailto:${school.email_id}`}
-                          className="text-foreground hover:text-primary transition-colors duration-200 truncate hover:underline"
-                        >
-                          {school.email_id}
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <Button
-                      variant="outline"
-                      className="w-full mt-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-300 bg-transparent hover:scale-105"
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent
