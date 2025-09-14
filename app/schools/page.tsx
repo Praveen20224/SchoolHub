@@ -364,4 +364,71 @@ export default function SchoolsPage() {
                       <School className="h-12 w-12 text-primary/60 group-hover:scale-110 transition-transform duration-300" />
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {/* School Name */}
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground mb-1 text-balance group-hover:text-primary transition-colors duration-300">
+                        {school.name}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs hover:scale-105 transition-transform duration-200"
+                        >
+                          {school.city}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs hover:scale-105 transition-transform duration-200">
+                          {school.state}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Address */}
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground group-hover:text-foreground transition-colors duration-300">
+                      <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 group-hover:text-primary transition-colors duration-300" />
+                      <p className="text-pretty">{school.address}</p>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-200" />
+                        <a
+                          href={`tel:${school.contact}`}
+                          className="text-foreground hover:text-primary transition-colors duration-200 hover:underline"
+                        >
+                          {school.contact}
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Mail className="h-4 w-4 text-primary group-hover:scale-110 transition-transform duration-200" />
+                        <a
+                          href={`mailto:${school.email_id}`}
+                          className="text-foreground hover:text-primary transition-colors duration-200 truncate hover:underline"
+                        >
+                          {school.email_id}
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Action Button */}
+                    <Button
+                      variant="outline"
+                      className="w-full mt-4 group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-300 bg-transparent hover:scale-105"
+                    >
+                      View Details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
